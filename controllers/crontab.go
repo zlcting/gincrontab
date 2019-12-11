@@ -26,19 +26,29 @@ type CrontabTable struct {
 }
 
 func Crontabrun(c *gin.Context) {
-	//var cron *Crontab
+	var cron Crontab
 	var crontabfeild []models.CrontabTable
-
+	var expr *cronexpr.Expression
 	crontabfeild = models.QueryCronWightCon()
-	// var scheduleTable map[string]*Crontab
-	// scheduleTable = make(map[string]*Crontab)
+	var scheduleTable map[string]*Crontab
+	scheduleTable = make(map[string]*Crontab)
+	now := time.Now()
 
 	for k, v := range crontabfeild {
 		fmt.Println(k)
 		fmt.Println(v)
+		expr = cronexpr.MustParse(v.Timing)
+		cron = Crontab{
+			expr:     expr,
+			Command:  "",
+			NextTime: expr.Next(now),
+		}
+
+		scheduleTable[v.Name] = &cron
+
 	}
 
-	//Timg(cron)
+	Timg(scheduleTable)
 	//返回html
 	c.HTML(http.StatusOK, "home.html", gin.H{"title": ""})
 }
@@ -54,34 +64,31 @@ func Run() {
 }
 
 //nihao de
-func Timg(cron *Crontab) {
-	fmt.Println(cron)
-	var expr *cronexpr.Expression
-	var err error
-	// 当前时间
-	now := time.Now()
-	cron = &Crontab{
-		expr:     expr,
-		Command:  "",
-		NextTime: expr.Next(now),
-	}
+func Timg(scheduleTable map[string]*Crontab) {
+	go func() {
+		var (
+			jobName string
+			cron    *Crontab
+			now     time.Time
+		)
+		for {
+			now = time.Now()
 
-	if expr, err = cronexpr.Parse("* 1 1 * * * *"); err != nil {
-		fmt.Println(err)
-		return
-	}
-	//expr = cronexpr.MustParse("* 1 1 * * * *")
+			for jobName, cron = range scheduleTable {
 
-	fmt.Println("当前时间：", now)
-	// 下次调度时间
-	nextTime := expr.Next(now)
-	fmt.Println("下次时间：", nextTime)
-	// 等待这个定时器超时
-	time.AfterFunc(nextTime.Sub(now), func() {
-		Run()
-		now := time.Now()
-		nextTime := expr.Next(now)
-		fmt.Println("下次时间：", nextTime)
-	}) // 下次时间减去当前时间
+				if cron.NextTime.Before(now) || cron.NextTime.Equal(now) {
+					go func(string) {
+						fmt.Println("执行", jobName)
+					}(jobName)
 
+					cron.NextTime = cron.expr.Next(now)
+					fmt.Println(jobName, "下次执行时间：", cron.NextTime)
+				}
+			}
+			select {
+			case <-time.NewTimer(100 * time.Millisecond).C:
+
+			}
+		}
+	}()
 }
