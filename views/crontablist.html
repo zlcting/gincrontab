@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>首页</title>
+    <link href="static/css/blogsheet.css" rel="stylesheet">
+</head>
+<body>
+{{template "nav.html" .}}
+
+<div id="main">
+    <h1>任务列表 <span style="color: red;">{{if .StartFlag  }}已启动{{end}}
+        </span></h1>
+    <div class="home-block-item-udpate">
+        <a href='javascript:if(confirm("确定停止crontab吗？")){location="{{.DeleteLink}}"}'>停止</a>
+        <a href='javascript:if(confirm("确定执行crontab吗？")){location="{{.DeleteLink}}"}'>执行</a>
+    </div>
+    <div id="tags-list">
+    <div><span class="global-color">搜房爬虫></span>>  */5 * * * * * * ：ps <button>执行</button> </div>
+
+    <div><span class="global-color">搜房爬虫></span>>  */5 * * * * * * ：ps <button>执行</button>
+    </div>
+    {{range $k,$v := .Content}}
+
+    <div><span class="global-color">{{$v.Name}}></span>> {{$v.Timing}} ：{{$v.Command}} <button>执行</button>
+    </div>    
+    {{end}}
+    </div>
+
+</div>
+
+</body>
+</html>
